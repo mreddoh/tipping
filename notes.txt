@@ -1,0 +1,5 @@
+Add in Home ground advantage to ELO. Maybe some end of season adjustments too.
+
+Create some characteristics based around player experience and the like.
+
+Create a script to calculate tips for each week.
