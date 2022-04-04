@@ -6,9 +6,9 @@ library("here")
 library("lubridate")
 
 ## LOAD DATA
-load(here::here("data", "ps.Rda"))
-load(here::here("data", "gms.Rda"))
-load(here::here("data", "game_lookup.Rda"))
+# load(here::here("data", "ps.Rda"))
+# load(here::here("data", "gms.Rda"))
+# load(here::here("data", "game_lookup.Rda"))
 
 
 ## Create variables that look at defence, midfield and offence strength based on i50s and scores.
@@ -98,13 +98,14 @@ POSratings <- previous_games %>%
                         n = n()
                         ) %>%
                         filter(n==20) %>% 
-                        mutate(Date = as.Date(as.numeric(Date), origin = "1970-01-01")) %>% 
+                        mutate(Date = as.Date(as.numeric(Date), origin = "1970-01-01"),
+                               Team = replace_teams(Team)) %>% 
                         select(-n)
   
 
 ## just have to look at differentials
 opponentJoined_POSratings <- game.lookup %>%
-                             select(Game,Date,Home.Team,Away.Team,Venue) %>% 
+                             select(game.id,Date,Home.Team,Away.Team,Venue) %>% 
                              merge(.,POSratings,by.x=c("Home.Team","Date"),by.y=c("Team","Date")) %>% 
                              merge(.,POSratings,by.x=c("Away.Team","Date"),by.y=c("Team","Date"))
 
@@ -114,12 +115,13 @@ names(opponentJoined_POSratings) <- names(opponentJoined_POSratings) %>%
                              gsub(".y",".away",.,fixed = TRUE)
 
 home_diff <- select(opponentJoined_POSratings,ends_with(".home")) - select(opponentJoined_POSratings,ends_with(".away"))
-home_diff <- opponentJoined_POSratings %>% select(Game,Home.Team) %>% cbind(.,home_diff)
+home_diff <- opponentJoined_POSratings %>% select(game.id,Home.Team) %>% cbind(.,home_diff)
 names(home_diff) <- names(home_diff) %>% gsub(".home",".diff",.,fixed = TRUE) %>% gsub("Home.","",.,fixed = TRUE)
 
 away_diff <- select(opponentJoined_POSratings,ends_with(".away")) - select(opponentJoined_POSratings,ends_with(".home"))
-away_diff <- opponentJoined_POSratings %>% select(Game,Away.Team) %>% cbind(.,away_diff)
+away_diff <- opponentJoined_POSratings %>% select(game.id,Away.Team) %>% cbind(.,away_diff)
 names(away_diff) <- names(away_diff) %>% gsub(".away",".diff",.,fixed = TRUE) %>% gsub("Away.","",.,fixed = TRUE)
+
 
 gameslongform.fundamentals <- rbind(home_diff,away_diff)
         

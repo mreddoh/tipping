@@ -1,15 +1,16 @@
 
 ## LOAD PACKAGES
-library("fitzRoy")
-library("tidyverse")
-library("here")
+library(fitzRoy)
+library(tidyverse)
+library(here)
+library(lubridate)
 
 ## LOAD DATA
-load(here::here("data", "gms.Rda"))
-load(here::here("data", "game_lookup.Rda"))
+# load(here::here("data", "gms.Rda"))
+# load(here::here("data", "game_lookup.Rda"))
 
 ## Create a dataset with a rating for each team
-all.teams <- convert_results(gms) %>% select(Team) %>% unique() %>% t()
+all.teams <- gms %>% pivot_longer(cols = c(Home.Team,Away.Team), values_to = "Team") %>% select(Team) %>% unique() %>% t()
 ratings <- as.list(rep(1500, times=length(all.teams)))
 names(ratings) <- all.teams
 
@@ -17,7 +18,7 @@ names(ratings) <- all.teams
 ratings[c("GWS","Gold Coast")] <- 1100
 
 gms_s <- game.lookup %>% subset(year(Date)>=2003) %>% 
-  select(Game, Date, Home.Team, Home.Points, Away.Team, Away.Points, Home.Goals, Home.Behinds, Away.Goals, Away.Behinds, HomeAdv.flag, Margin) %>%
+  select(game.id, Date, Home.Team, Home.Points, Away.Team, Away.Points, Home.Goals, Home.Behinds, Away.Goals, Away.Behinds, HomeAdv.flag, Margin) %>%
   mutate(result.home = ifelse(Home.Points>Away.Points,1,ifelse(Home.Points==Away.Points,0.5,0)),
          result.away = ifelse(Home.Points<Away.Points,1,ifelse(Home.Points==Away.Points,0.5,0)),
          Home.SS = Home.Goals+Home.Behinds,
@@ -60,7 +61,7 @@ for (idx in 1:dim(gms_s)[1]){
   
 }
 
-hm_tmp <- gms_s %>% select(Game,Home.Team,preELOhome,postELOhome,preELOaway,postELOaway,expectedHome) %>% 
+hm_tmp <- gms_s %>% select(game.id,Home.Team,preELOhome,postELOhome,preELOaway,postELOaway,expectedHome) %>% 
                     rename(Team = Home.Team, 
                            preELO = preELOhome, 
                            postELO = postELOhome, 
@@ -68,7 +69,7 @@ hm_tmp <- gms_s %>% select(Game,Home.Team,preELOhome,postELOhome,preELOaway,post
                            postELOopp = postELOaway,
                            expectedResult = expectedHome)
 
-wy_tmp <- gms_s %>% select(Game,Away.Team,preELOaway,postELOaway,preELOhome,postELOhome,expectedAway) %>% 
+wy_tmp <- gms_s %>% select(game.id,Away.Team,preELOaway,postELOaway,preELOhome,postELOhome,expectedAway) %>% 
                     rename(Team = Away.Team, 
                            preELO = preELOaway, 
                            postELO = postELOaway, 
@@ -84,7 +85,7 @@ games.elo <- gms_s %>% mutate(outcome = ifelse(Margin>0,1,ifelse(Margin==0,0.5,0
 remove(hm_tmp, wy_tmp, gms_s, all.teams, ratings)
 
 
-games.elo %>% filter(year(Date)==2012) %>%
+games.elo %>% filter(year(Date)==2021) %>%
                       mutate(expectedResult = ifelse(expectedHome > 0.5,1,0)) %>%
                       mutate(result = expectedResult == outcome) %>%
                       summarise(mean = mean(result))

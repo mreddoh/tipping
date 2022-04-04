@@ -29,7 +29,8 @@ game.lookup <- gms %>%
                                        Venue %in% c("Wellington","Jiangwan Stadium") ~ "International",
                                        Venue %in% c("Marrara Oval","Traeger Park") ~ "Darwin",
                                        TRUE ~ "Melbourne")) %>%
-               mutate(HomeAdv.flag = ifelse(Home.Team.city == city & Away.Team.city != city, 1, 0)) %>%
+               mutate(HomeAdv.flag = ifelse(Home.Team.city == city & Away.Team.city != city, 1, 0),
+                      Margin = Home.Points - Away.Points) %>%
                select(-c(Home.Team.city,Away.Team.city,city))
 
 

@@ -31,7 +31,13 @@ mysample %>% select(avg_MIDrating_p15.diff,outcome) %>%
   ggplot(aes(x=avg_MIDrating_p10.diff_grp, y=mean_outcome)) + geom_point(stat="identity") + theme(axis.text.x=element_text(angle=90,hjust=1))
 
 mysample %>% select(avg_BCKrating_p10.diff,outcome) %>%
-  mutate(avg_BCKrating_p10.diff_grp = cut(avg_BCKrating_p10.diff, breaks=seq(-0.175,0.175,0.025))) %>%
+  mutate(avg_BCKrating_p10.diff_grp = cut(avg_BCKrating_p10.diff, breaks=seq(-1,1,0.025))) %>%
+  group_by(avg_BCKrating_p10.diff_grp) %>%
+  summarise(mean_outcome=mean(outcome), cnt=n()) %>%
+  ggplot(aes(x=avg_BCKrating_p10.diff_grp, y=mean_outcome)) + geom_point(stat="identity") + theme(axis.text.x=element_text(angle=90,hjust=1))
+
+mysample %>% select(avg_FWDrating_p10.diff,outcome) %>%
+  mutate(avg_BCKrating_p10.diff_grp = cut(avg_FWDrating_p10.diff, breaks=seq(-0.175,0.175,0.025))) %>%
   group_by(avg_BCKrating_p10.diff_grp) %>%
   summarise(mean_outcome=mean(outcome), cnt=n()) %>%
   ggplot(aes(x=avg_BCKrating_p10.diff_grp, y=mean_outcome)) + geom_point(stat="identity") + theme(axis.text.x=element_text(angle=90,hjust=1))
@@ -46,30 +52,32 @@ mysample <- mysample %>%
             mutate(avg_MIDrating_p10.diff_f = case_when(avg_MIDrating_p10.diff <= -0.5 ~ -0.5, avg_MIDrating_p10.diff >= 0.5 ~ 0.5, TRUE ~ avg_MIDrating_p10.diff))  %>%
             mutate(avg_BCKrating_p10.diff_f = case_when(avg_BCKrating_p10.diff <= -0.175 ~ -0.175, avg_BCKrating_p10.diff >= 0.175 ~ 0.175, TRUE ~ avg_BCKrating_p10.diff)) 
 
-model_ds <- mysample %>% filter(year(Date)!=2018)
+model_ds <- mysample %>% filter(year(Date)!=2021)
 #apply transform to variable
 
 model <- glm(formula = outcome ~ expectedResult + 
-                                 form.5.diff_f + 
+                                 #form.5.diff_f + 
                                  avg_FWDrating_p10.diff_f +
                                  avg_MIDrating_p10.diff_f +
-                                 avg_BCKrating_p10.diff_f ,
+                                 avg_BCKrating_p10.diff_f,
              family = binomial(link = "logit"), data = model_ds)
 
 summary(model)
 
-mysample %>% filter(year(Date)==2018 & Status=="Home") %>%
+mysample %>% filter(year(Date)==2021 & Status=="Home") %>%
              mutate(fitted.results = predict(model,newdata=.,type='response')) %>%
              mutate(fitted.results = ifelse(fitted.results > 0.5,1,0)) %>%
              mutate(result = fitted.results == outcome) %>%
              summarise(mean = mean(result))
 
-mysample %>% filter(year(Date)==2018 & Status=="Home") %>%
+mysample %>% filter(year(Date)==2021 & Status=="Home") %>%
              mutate(expectedResult = ifelse(expectedResult > 0.5,1,0)) %>%
              mutate(result = expectedResult == outcome) %>%
              summarise(mean = mean(result))
 
+save(model, file = here("models","model_v.02.Rda"))
+
 # check other tipsters
 load(here::here("data", "tipsters.Rda"))
 
-tipsters %>% filter(year(date)==2018) %>% group_by(source) %>% summarise(mean = mean(correct))
+tipsters %>% filter(year(date)==2021) %>% group_by(source) %>% summarise(mean = mean(correct))

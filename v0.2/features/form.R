@@ -5,29 +5,34 @@ library("tidyverse")
 library("here")
 
 ## LOAD DATA
-load(here::here("data", "gms.Rda"))
+# load(here::here("data", "gms.Rda"))
 
 ## SET INITIAL PARAMETERS
 t = 20 # max length of historical variables
 
 ## TRANSFORM DATA
-gms_tmp <- convert_results(gms) %>% 
-           select(Game, Team, Margin) %>%
-           group_by(Team) %>% 
-           mutate(team_game_id = seq_along(Game)) %>%
-           sapply(rep.int, times=t) %>%
-           as.data.frame(stringsAsFactors = FALSE) %>%
-           arrange(Game,Team) %>%
-           mutate(game.shift = rep(1:t,dim(convert_results(gms))[1]),
-                  join.id = as.numeric(team_game_id) - game.shift,
-                  Margin = as.numeric(Margin)) %>%
-           filter(join.id > 0)
+gms_tmp <- gms %>%
+  pivot_longer(cols = c(Home.Team,Away.Team), values_to = "Team") %>% 
+  mutate(Score.for = ifelse(name == "Home.Team", Home.Points, Away.Points),
+         Score.against = ifelse(name == "Home.Team", Away.Points, Home.Points),
+         Margin = ifelse(name == "Home.Team", Margin, Margin*-1),
+         game.id = Game) %>% 
+  select(game.id, Team, Margin) %>%
+  group_by(Team) %>% 
+  mutate(team_game_id = seq_along(game.id)) %>%
+  sapply(rep.int, times=t) %>%
+  as.data.frame(stringsAsFactors = FALSE) %>%
+  arrange(game.id,Team) %>%
+  mutate(game.shift = rep(1:t,dim(gms)[1]*2),
+         join.id = as.numeric(team_game_id) - game.shift,
+         Margin = as.numeric(Margin)) %>%
+  filter(join.id > 0)
 
 previous_games <- gms_tmp %>%
                   select(Team, team_game_id, Margin) %>%
                   unique() %>%
                   merge(gms_tmp, ., by.x=c("Team", "join.id"), by.y=c("Team", "team_game_id")) %>% 
-                  select(Team,Game,game.shift,Margin.y) %>%
+                  select(Team,game.id,game.shift,Margin.y) %>%
                   mutate(game.shift=paste('p', game.shift, sep="_")) %>%
                   spread(game.shift, Margin.y)
 
@@ -54,7 +59,7 @@ for (i in game_seq){
 
 gameslongform.form <- form_char %>% 
                       select(.,c(-num_range("p_", 1:t))) %>% 
-                      merge(., ., by="Game") %>%
+                      merge(., ., by="game.id") %>%
                       filter(Team.x != Team.y) %>%
                       select(.,-Team.y) %>%
                       rename(Team = Team.x)

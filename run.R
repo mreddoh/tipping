@@ -2,6 +2,11 @@
 ## SET VERSION
 version <- "v0.2"
 
+##LOAD DATA
+load(here::here("data", "gms.Rda"))
+load(here::here("data", "game_lookup.Rda"))
+load(here::here("data", "ps.Rda"))
+
 ## CREATE ELO VARIABLES
   source(here::here(version, "elo", "elo.R"), echo = TRUE)
 ## CREATE/ADD BASIC FEATURES
