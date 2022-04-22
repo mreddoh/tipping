@@ -1,6 +1,6 @@
 # MAKE SCRIPT TO MAKE TIPS
 
-rrr = 4
+rrr = 6
 
 ## LOAD PACKAGES ----
 library(fitzRoy)
@@ -169,11 +169,13 @@ Tips <- this_weeks_games %>%
   left_join(.,this_weeks_games.ELO,by=c("Date","Season","Round","Home.Team","Away.Team")) %>% 
   left_join(.,this_weeks_games.form,by=c("Date","Season","Round","Home.Team","Away.Team")) %>% 
   left_join(.,this_weeks_games.fundamentals,by=c("Date","Season","Round","Home.Team","Away.Team")) %>%
-  mutate(fitted.results = predict(model,newdata=.,type='response')) %>%
-  mutate(fitted.results = ifelse(fitted.results > 0.5,1,0)) %>%
-  mutate(Tip = ifelse(fitted.results == 1, Home.Team, Away.Team))
+  mutate(fitted.results.raw = predict(model,newdata=.,type='response')) %>%
+  mutate(fitted.results = ifelse(fitted.results.raw > 0.5,1,0)) %>%
+  mutate(Tip = ifelse(fitted.results == 1, Home.Team, Away.Team),
+         Chance = paste0(round(ifelse(fitted.results.raw<0.5,1-fitted.results.raw,fitted.results.raw)*100,0),"%"))
 
-Tips$Tip
+print(paste0("Round ",rrr))
+Tips %>% select(Tip, Chance)
 
 
 
